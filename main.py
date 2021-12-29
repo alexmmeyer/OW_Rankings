@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from itertools import combinations
 import variables
 import networkx as nx
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 DIRECTORY = variables.DIRECTORY
 RANKING_FILE_NAME = variables.RANKING_FILE_NAME
@@ -58,7 +58,7 @@ def update_rankings(race_result_file):
     name_list = [name.title() for name in name_list]
     combos = list(combinations(name_list, 2))
     combos = [tuple(reversed(combo)) for combo in combos]
-    age_weight = age_weight_linear(race_data.date[0])
+    age_weight = age_weight_exp(race_data.date[0])
     comp_weight = comp_level(race_data.event[0])
     distance_weight = 1
     total_weight = age_weight * comp_weight * distance_weight
@@ -145,3 +145,17 @@ ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(
 ranking_df["rank"] = range(1, len(pr_dict) + 1)
 print(ranking_df[ranking_df["rank"] < 26])
 
+# Visualization
+num_of_athletes = 10
+top_athletes = list(ranking_df.name[ranking_df["rank"] < num_of_athletes + 1])
+G = G.subgraph(top_athletes)
+
+size_map = []
+thicknesses = []
+for name in G.nodes:
+    size_map.append(float(ranking_df.pagerank[ranking_df.name == name] * 10000))
+for edge in G.edges:
+    thicknesses.append(G[edge[0]][edge[1]]["weight"] * 2)
+
+nx.draw_networkx(G, node_size=size_map, width=thicknesses, pos=nx.spring_layout(G))
+plt.show()
