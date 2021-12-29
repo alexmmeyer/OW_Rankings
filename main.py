@@ -37,9 +37,7 @@ def age_weight_linear(date_as_text):
         return weight
 
 
-def comp_level(race_result_file):
-    race_data = pd.read_csv(race_result_file)
-    event_type = race_data.event[0]
+def comp_level(event_type):
     weight = float(event_type_weights.weight[event_type_weights.event == event_type])
     return weight
 
@@ -55,7 +53,7 @@ def update_rankings(race_result_file):
     combos = list(combinations(name_list, 2))
     combos = [tuple(reversed(combo)) for combo in combos]
     age_weight = age_weight_linear(race_data.date[0])
-    comp_weight = comp_level(race_result_file)
+    comp_weight = comp_level(race_data.event[0])
     distance_weight = 1
     total_weight = age_weight * comp_weight * distance_weight
     print(f"Loading {race_result_file}")
