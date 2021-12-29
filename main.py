@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from itertools import combinations
 import variables
 import networkx as nx
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 DIRECTORY = variables.DIRECTORY
 RANKING_FILE_NAME = variables.RANKING_FILE_NAME
@@ -12,7 +12,6 @@ RANKING_AS_OF = variables.RANKING_AS_OF
 DEPRECIATION_PERIOD = variables.DEPRECIATION_PERIOD
 LAMBDA = variables.LAMBDA
 event_type_weights = variables.event_points
-aging_method = variables.aging_method
 
 
 def age_weight_exp(race_date_text):
@@ -59,18 +58,19 @@ def update_rankings(race_result_file):
     name_list = [name.title() for name in name_list]
     combos = list(combinations(name_list, 2))
     combos = [tuple(reversed(combo)) for combo in combos]
-    if aging_method == "exponential":
-        age_weight = age_weight_exp(race_data.date[0])
-    elif aging_method == "linear":
-        age_weight = age_weight_linear(race_data.date[0])
+    age_weight = age_weight_exp(race_data.date[0])
     comp_weight = comp_level(race_data.event[0])
     distance_weight = 1
     total_weight = age_weight * comp_weight * distance_weight
     print(f"Loading {race_result_file}")
 
     for combo in combos:
-        G.add_edge(*combo, weight=total_weight)
-        # is this overriding (bad), or adding weight to (good), existing edges for subsequent matchups between athletes?
+        if combo in G.edges:
+            current_weight = G[combo[0]][combo[1]]["weight"]
+            new_weight = current_weight + total_weight
+            G[combo[0]][combo[1]]["weight"] = new_weight
+        else:
+            G.add_edge(*combo, weight=total_weight)
 
     pr_dict = nx.pagerank(G)
 
@@ -123,7 +123,7 @@ for file in os.listdir(DIRECTORY):
     race_date = dt.strptime(race_data.date[0], "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
-        print(f"Excluding {file}, not in date range.")
+        print(f"Excluding {file}, race is not in date range.")
     elif os.path.exists(RANKING_FILE_NAME):
         test_predictability(results_file_path)
         update_rankings(results_file_path)
@@ -131,9 +131,7 @@ for file in os.listdir(DIRECTORY):
         update_rankings(results_file_path)
 
 predictability = correct_predictions / total_matchups
-print(correct_predictions)
-print(total_matchups)
-print(predictability)
+print(f"Predictability: {predictability}")
 
 pr_dict = nx.pagerank(G)
 
@@ -146,3 +144,18 @@ ranking_df = pd.DataFrame(ranking_dict)
 ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
 ranking_df["rank"] = range(1, len(pr_dict) + 1)
 print(ranking_df[ranking_df["rank"] < 26])
+
+# Visualization
+num_of_athletes = 10
+top_athletes = list(ranking_df.name[ranking_df["rank"] < num_of_athletes + 1])
+G = G.subgraph(top_athletes)
+
+size_map = []
+thicknesses = []
+for name in G.nodes:
+    size_map.append(float(ranking_df.pagerank[ranking_df.name == name] * 10000))
+for edge in G.edges:
+    thicknesses.append(G[edge[0]][edge[1]]["weight"] * 2)
+
+nx.draw_networkx(G, node_size=size_map, width=thicknesses, pos=nx.spring_layout(G))
+plt.show()
