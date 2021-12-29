@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from itertools import combinations
 import variables
 import networkx as nx
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 DIRECTORY = variables.DIRECTORY
 RANKING_FILE_NAME = variables.RANKING_FILE_NAME
@@ -12,6 +12,7 @@ RANKING_AS_OF = variables.RANKING_AS_OF
 DEPRECIATION_PERIOD = variables.DEPRECIATION_PERIOD
 LAMBDA = variables.LAMBDA
 event_type_weights = variables.event_points
+aging_method = variables.aging_method
 
 
 def age_weight_exp(date_as_text):
@@ -21,13 +22,10 @@ def age_weight_exp(date_as_text):
     """
     race_date = dt.strptime(date_as_text, "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
-    if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
-        return 0
-    else:
-        days_old = (rank_date.date() - race_date.date()).days
-        years_old = days_old / 365
-        weight = 2.71828 ** (LAMBDA * years_old)
-        return weight
+    days_old = (rank_date.date() - race_date.date()).days
+    years_old = days_old / 365
+    weight = 2.71828 ** (LAMBDA * years_old)
+    return weight
 
 
 def age_weight_linear(date_as_text):
@@ -37,12 +35,9 @@ def age_weight_linear(date_as_text):
     """
     race_date = dt.strptime(date_as_text, "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
-    if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
-        return 0
-    else:
-        days_old = (rank_date.date() - race_date.date()).days
-        weight = (DEPRECIATION_PERIOD - days_old) / DEPRECIATION_PERIOD
-        return weight
+    days_old = (rank_date.date() - race_date.date()).days
+    weight = (DEPRECIATION_PERIOD - days_old) / DEPRECIATION_PERIOD
+    return weight
 
 
 def comp_level(event_type):
@@ -64,12 +59,14 @@ def update_rankings(race_result_file):
     name_list = [name.title() for name in name_list]
     combos = list(combinations(name_list, 2))
     combos = [tuple(reversed(combo)) for combo in combos]
-    age_weight = age_weight_linear(race_data.date[0])
+    if aging_method == "exponential":
+        age_weight = age_weight_exp(race_data.date[0])
+    elif aging_method == "linear":
+        age_weight = age_weight_linear(race_data.date[0])
     comp_weight = comp_level(race_data.event[0])
     distance_weight = 1
     total_weight = age_weight * comp_weight * distance_weight
     print(f"Loading {race_result_file}")
-
 
     for combo in combos:
         G.add_edge(*combo, weight=total_weight)
