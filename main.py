@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime as dt
 from itertools import combinations
 import variables
 import networkx as nx
@@ -15,8 +15,8 @@ event_type_weights = variables.event_points
 
 
 def age_weight_exp(date_as_text):
-    race_date = datetime.strptime(date_as_text, "%m/%d/%Y")
-    rank_date = datetime.strptime(RANKING_AS_OF, "%m/%d/%Y")
+    race_date = dt.strptime(date_as_text, "%m/%d/%Y")
+    rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
         return 0
     else:
@@ -27,8 +27,8 @@ def age_weight_exp(date_as_text):
 
 
 def age_weight_linear(date_as_text):
-    race_date = datetime.strptime(date_as_text, "%m/%d/%Y")
-    rank_date = datetime.strptime(RANKING_AS_OF, "%m/%d/%Y")
+    race_date = dt.strptime(date_as_text, "%m/%d/%Y")
+    rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
         return 0
     else:
@@ -113,8 +113,8 @@ if os.path.exists(RANKING_FILE_NAME):
 for file in os.listdir(DIRECTORY):
     results_file_path = os.path.join(DIRECTORY, file)
     race_data = pd.read_csv(results_file_path)
-    race_date = datetime.strptime(race_data.date[0], "%m/%d/%Y")
-    rank_date = datetime.strptime(RANKING_AS_OF, "%m/%d/%Y")
+    race_date = dt.strptime(race_data.date[0], "%m/%d/%Y")
+    rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
         print(f"Excluding {file}, not in date range.")
     elif os.path.exists(RANKING_FILE_NAME):
