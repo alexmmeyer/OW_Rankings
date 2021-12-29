@@ -15,6 +15,10 @@ event_type_weights = variables.event_points
 
 
 def age_weight_exp(date_as_text):
+    """
+    :param date_as_text: date in MM/DD/YYYY text format
+    :return: weight based on RANKING_AS_OF, DEPRECIATION_PERIOD, and LAMBDA (exponential decay)
+    """
     race_date = dt.strptime(date_as_text, "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
@@ -27,6 +31,10 @@ def age_weight_exp(date_as_text):
 
 
 def age_weight_linear(date_as_text):
+    """
+    :param date_as_text: date in MM/DD/YYYY text format
+    :return: weight based on RANKING_AS_OF and DEPRECIATION_PERIOD (linear decay)
+    """
     race_date = dt.strptime(date_as_text, "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
@@ -38,6 +46,10 @@ def age_weight_linear(date_as_text):
 
 
 def comp_level(event_type):
+    """
+    :param event_type: event type as text, ie: "FINA World Cup"
+    :return: weight as a float
+    """
     weight = float(event_type_weights.weight[event_type_weights.event == event_type])
     return weight
 
