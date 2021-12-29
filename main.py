@@ -15,12 +15,12 @@ event_type_weights = variables.event_points
 aging_method = variables.aging_method
 
 
-def age_weight_exp(date_as_text):
+def age_weight_exp(race_date_text):
     """
-    :param date_as_text: date in MM/DD/YYYY text format
+    :param race_date_text: date in MM/DD/YYYY text format
     :return: weight based on RANKING_AS_OF, DEPRECIATION_PERIOD, and LAMBDA (exponential decay)
     """
-    race_date = dt.strptime(date_as_text, "%m/%d/%Y")
+    race_date = dt.strptime(race_date_text, "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     days_old = (rank_date.date() - race_date.date()).days
     years_old = days_old / 365
@@ -28,12 +28,12 @@ def age_weight_exp(date_as_text):
     return weight
 
 
-def age_weight_linear(date_as_text):
+def age_weight_linear(race_date_text):
     """
-    :param date_as_text: date in MM/DD/YYYY text format
+    :param race_date_text: date in MM/DD/YYYY text format
     :return: weight based on RANKING_AS_OF and DEPRECIATION_PERIOD (linear decay)
     """
-    race_date = dt.strptime(date_as_text, "%m/%d/%Y")
+    race_date = dt.strptime(race_date_text, "%m/%d/%Y")
     rank_date = dt.strptime(RANKING_AS_OF, "%m/%d/%Y")
     days_old = (rank_date.date() - race_date.date()).days
     weight = (DEPRECIATION_PERIOD - days_old) / DEPRECIATION_PERIOD
