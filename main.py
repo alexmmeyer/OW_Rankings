@@ -56,7 +56,8 @@ def update_rankings(race_result_file):
     combos = [tuple(reversed(combo)) for combo in combos]
     age_weight = age_weight_linear(race_data.date[0])
     comp_weight = comp_level(race_result_file)
-    total_weight = age_weight * comp_weight
+    distance_weight = 1
+    total_weight = age_weight * comp_weight * distance_weight
     print(f"Loading {race_result_file}")
 
 
@@ -111,9 +112,16 @@ if os.path.exists(RANKING_FILE_NAME):
 
 for file in os.listdir(DIRECTORY):
     results_file_path = os.path.join(DIRECTORY, file)
-    if os.path.exists(RANKING_FILE_NAME):
+    race_data = pd.read_csv(results_file_path)
+    race_date = datetime.strptime(race_data.date[0], "%m/%d/%Y")
+    rank_date = datetime.strptime(RANKING_AS_OF, "%m/%d/%Y")
+    if (rank_date.date() - race_date.date()).days > DEPRECIATION_PERIOD or rank_date.date() < race_date.date():
+        print(f"Excluding {file}, not in date range.")
+    elif os.path.exists(RANKING_FILE_NAME):
         test_predictability(results_file_path)
-    update_rankings(results_file_path)
+        update_rankings(results_file_path)
+    else:
+        update_rankings(results_file_path)
 
 predictability = correct_predictions / total_matchups
 print(correct_predictions)
@@ -131,8 +139,3 @@ ranking_df = pd.DataFrame(ranking_dict)
 ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
 ranking_df["rank"] = range(1, len(pr_dict) + 1)
 print(ranking_df[ranking_df["rank"] < 26])
-
-# # Visualization
-# position = nx.spring_layout(G)
-# nx.draw_networkx(G, position)
-# plt.show()
