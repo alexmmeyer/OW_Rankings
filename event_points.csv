@@ -1,0 +1,14 @@
+event,max_points,weight
+Olympic Games,2000,1
+FINA World Championships 5km,1500,0.75
+FINA World Championships 10km,2000,1
+FINA World Championships 25km,1500,0.75
+FINA World Cup,750,0.375
+FINA Grand Prix,300,0.15
+LEN Cup,300,0.15
+European Championships,1000,0.5
+Pan Pacific Championships,1000,0.5
+Pan American Games,800,0.4
+World University Games,500,0.25
+Commonwealth Games,800,0.4
+FINA Olympic Qualifier,200,0.1
