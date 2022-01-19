@@ -104,18 +104,6 @@ def update_rankings(race_result_file, ranking_date):
             }
             G.add_edge(*combo, weight=total_weight, race_weights=label_dict)
 
-    pr_dict = nx.pagerank(G)
-
-    ranking_dict = {
-        "name": list(pr_dict.keys()),
-        "pagerank": list(pr_dict.values())
-    }
-
-    ranking_df = pd.DataFrame(ranking_dict)
-    ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
-    ranking_df["rank"] = range(1, len(pr_dict) + 1)
-    ranking_df.to_csv(RANKING_FILE_NAME, index=False)
-
 
 def test_predictability(race_result_file):
     """
@@ -188,42 +176,48 @@ def create_ranking(ranking_date, test=False, comment=False, display_list=0, vis=
         ranking_data = pd.read_csv(RANKING_FILE_NAME)
         print(ranking_data[ranking_data["rank"] < display_list + 1])
 
-    if vis > 0:
+    # if vis > 0:
+    #
+    #     pr_dict = nx.pagerank(G)
+    #
+    #     ranking_dict = {
+    #         "name": list(pr_dict.keys()),
+    #         "pagerank": list(pr_dict.values())
+    #     }
+    #
+    #     ranking_df = pd.DataFrame(ranking_dict)
+    #     ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
+    #     ranking_df["rank"] = range(1, len(pr_dict) + 1)
+    #     print(ranking_df[ranking_df["rank"] < 26])
+    #
+    #     num_of_athletes = vis
+    #     top_athletes = list(ranking_df.name[ranking_df["rank"] < num_of_athletes + 1])
+    #     G = G.subgraph(top_athletes)
+    #
+    #     size_map = []
+    #     thicknesses = []
+    #     for name in G.nodes:
+    #         size_map.append(float(ranking_df.pagerank[ranking_df.name == name] * 10000))
+    #     for edge in G.edges:
+    #         thicknesses.append(G[edge[0]][edge[1]]["weight"] * 2)
+    #
+    #     nx.draw_networkx(G, node_size=size_map, width=thicknesses, pos=nx.spring_layout(G))
+    #     plt.show()
 
-        pr_dict = nx.pagerank(G)
+    pr_dict = nx.pagerank(G)
 
-        ranking_dict = {
-            "name": list(pr_dict.keys()),
-            "pagerank": list(pr_dict.values())
-        }
+    ranking_dict = {
+        "name": list(pr_dict.keys()),
+        "pagerank": list(pr_dict.values())
+    }
 
-        ranking_df = pd.DataFrame(ranking_dict)
-        ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
-        ranking_df["rank"] = range(1, len(pr_dict) + 1)
-        print(ranking_df[ranking_df["rank"] < 26])
-
-        num_of_athletes = vis
-        top_athletes = list(ranking_df.name[ranking_df["rank"] < num_of_athletes + 1])
-        G = G.subgraph(top_athletes)
-
-        size_map = []
-        thicknesses = []
-        for name in G.nodes:
-            size_map.append(float(ranking_df.pagerank[ranking_df.name == name] * 10000))
-        for edge in G.edges:
-            thicknesses.append(G[edge[0]][edge[1]]["weight"] * 2)
-
-        nx.draw_networkx(G, node_size=size_map, width=thicknesses, pos=nx.spring_layout(G))
-        plt.show()
+    ranking_df = pd.DataFrame(ranking_dict)
+    ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
+    ranking_df["rank"] = range(1, len(pr_dict) + 1)
+    ranking_df.to_csv(RANKING_FILE_NAME, index=False)
 
 
 def archive_ranking(ranking_date):
-
-    global correct_predictions
-    global total_tests
-
-    if os.path.exists(RANKING_FILE_NAME):
-        os.remove(RANKING_FILE_NAME)
 
     for file in os.listdir(RESULTS_DIRECTORY):
         results_file_path = os.path.join(RESULTS_DIRECTORY, file)
@@ -235,15 +229,35 @@ def archive_ranking(ranking_date):
         else:
             update_rankings(results_file_path, ranking_date)
 
+    pr_dict = nx.pagerank(G)
 
-def archive_rankings(start_date, end_date, increment=1):
+    ranking_dict = {
+        "name": list(pr_dict.keys()),
+        "pagerank": list(pr_dict.values())
+    }
+
+    ranking_df = pd.DataFrame(ranking_dict)
+    ranking_df = ranking_df.sort_values(by="pagerank", ascending=False).reset_index(drop=True)
+    ranking_df["rank"] = range(1, len(pr_dict) + 1)
+    file_name = ranking_date.replace("/", "_")
+    ranking_df.to_csv(f"rankings_archive/{file_name}.csv", index=False)
+
+
+def archive_rankings_range(start_date, end_date, increment=1):
     start_date = dt.strptime(start_date, "%m/%d/%Y")
     end_date = dt.strptime(end_date, "%m/%d/%Y")
     rank_dates = [(start_date + timedelta(days=i)).strftime("%m/%d/%Y") for i in range((end_date - start_date).days + 1)
                   if i % increment == 0]
 
+    files_created = 0
+    total_files = len(rank_dates)
+
     for date in rank_dates:
-        create_ranking(date)
+        archive_ranking(date)
+        files_created += 1
+        progress = files_created / total_files
+        print("{:.0%}".format(progress))
+
 
 
 def ranking_progression(athlete_name, start_date, end_date, increment=7):
@@ -296,7 +310,6 @@ def ranking_progression(athlete_name, start_date, end_date, increment=7):
     # Build the list of dates and labels to be used in the graph
     for date in all_race_dates:
         if start_date <= dt.strptime(date, "%m/%d/%Y") <= end_date:
-            race_dates.append(date)
             race_labels.append(all_race_labels[race_dates.index(date)])
 
     # Build the list of ranks to be used in the graph
@@ -340,6 +353,106 @@ def ranking_progression(athlete_name, start_date, end_date, increment=7):
     plt.xlabel("Date")
     plt.ylabel("World Ranking")
     plt.title(f"World Ranking Progression: {athlete_name}\n")
+    plt.show()
+
+
+def ranking_progression_from_archive(athlete_name, start_date, end_date, increment=7):
+    """
+    :param athlete_name:
+    :param start_date:
+    :param end_date:
+    :return: graph showing athlete's ranking on every day between (inclusive) start_date and end_date
+    :param increment:
+    """
+
+    # Get a list of dates called date_range within the start and end range
+    start_date = dt.strptime(start_date, "%m/%d/%Y")
+    end_date = dt.strptime(end_date, "%m/%d/%Y")
+    athlete_name = athlete_name.title()
+    date_range = [(start_date + timedelta(days=i)).strftime("%m/%d/%Y") for i in range((end_date - start_date).days + 1)
+                  if i % increment == 0]
+
+    # Loop through each of the dates in date_range and create a ranking. Add the date to one list and add the
+    # athlete's rank to a separate list. Count loops to track progress.
+    dates = []
+    ranks = []
+    loop_count = 0
+
+    for date in date_range:
+        file_name = date.replace("/", "_")
+        ranking_data = pd.read_csv(f"rankings_archive/{file_name}.csv")
+        ranked_athletes = list(ranking_data.name)
+        if athlete_name in ranked_athletes:
+            dates.append(date)
+            rank_on_date = int(ranking_data["rank"][ranking_data.name == athlete_name])
+            ranks.append(rank_on_date)
+        progress = loop_count / len(date_range)
+        loop_count += 1
+        print("{:.0%}".format(progress))
+
+    # Create a list of all dates within the date range that the athlete raced, a list of the athlete's rank on that
+    # date, and a list of the race names to be used as labels in the graph
+    all_race_dates = list(get_results(athlete_name).date)
+    race_dates = [date for date in all_race_dates if start_date <= dt.strptime(date, "%m/%d/%Y") <= end_date]
+
+    all_events = list(get_results(athlete_name).event)
+    all_locations = list(get_results(athlete_name).location)
+    all_race_labels = [all_events[i] + " " + all_locations[i] for i in range(len(all_events))]
+    race_labels = []
+
+    # Build the list of dates and labels to be used in the graph
+    for date in all_race_dates:
+        if start_date <= dt.strptime(date, "%m/%d/%Y") <= end_date:
+            race_labels.append(all_race_labels[all_race_dates.index(date)])
+
+    # Build the list of ranks to be used in the graph
+    race_date_ranks = []
+
+    print(all_race_dates)
+    print(all_race_labels)
+    print(race_dates)
+    print(race_labels)
+
+    for rd in race_dates:
+        file_name = rd.replace("/", "_")
+        ranking_data = pd.read_csv(f"rankings_archive/{file_name}.csv")
+        rank_on_date = int(ranking_data["rank"][ranking_data.name == athlete_name])
+        race_date_ranks.append(rank_on_date)
+        progress = len(race_date_ranks) / len(race_dates)
+        print("{:.0%}".format(progress))
+
+    print("Progression dates and ranks:")
+    print(dates)
+    print(ranks)
+    print("Race dates, ranks, and race labels:")
+    print(race_dates)
+    print(race_date_ranks)
+    print(race_labels)
+
+    # dict = {
+    #     "dates": dates,
+    #     "ranks": ranks
+    # }
+    # df = pd.DataFrame(dict)
+    # df.to_csv(f"{athlete_name}progression.csv")
+
+
+    # Plot progression dates and ranks in a step chart, plot races on top of that as singular scatter points.
+    dates = [dt.strptime(date, "%m/%d/%Y") for date in dates]
+    race_dates = [dt.strptime(date, "%m/%d/%Y") for date in race_dates]
+
+    plt.step(dates, ranks, where="post")
+    plt.plot(race_dates, race_date_ranks, "o")
+    for i, label in enumerate(race_labels):
+        plt.text(race_dates[i], race_date_ranks[i], label, rotation=45, fontsize="xx-small")
+    plt.ylim(ymin=0)
+    plt.gca().invert_yaxis()
+    plt.xticks(rotation=45)
+    plt.xlabel("Date")
+    plt.ylabel("World Ranking")
+    start_date = dt.strftime(start_date, "%m/%d/%Y")
+    end_date = dt.strftime(end_date, "%m/%d/%Y")
+    plt.title(f"World Ranking Progression {start_date} to {end_date}: {athlete_name}\n")
     plt.show()
 
 
@@ -454,4 +567,5 @@ G = nx.DiGraph()
 correct_predictions = 0
 total_tests = 0
 
-ranking_progression("Marc-Antoine Olivier", "02/07/2017", "08/16/2018", increment=7)
+ranking_progression_from_archive("Ferry Weertman", "01/01/2017", "07/30/2018")
+
